@@ -245,10 +245,10 @@ matrix makeRandomRotation() {
 
 // Test scene function to demonstrate rendering with user-controlled transformations
 // No input variables
-void sceneTest()
+void sceneTest() // custom scene, basically copy/mesh of scene 1 and scene 2.
 {
     Renderer renderer;
-    matrix camera = matrix::makeIdentity();
+    matrix camera;
     Light L{ vec4(0.f, 1.f, 1.f, 0.f), colour(1.0f, 1.0f, 1.0f), colour(0.2f, 0.2f, 0.2f) };
 
     bool running = true;
