@@ -75,7 +75,7 @@ public:
     // Output Variables:
     // - alpha, beta, gamma: Barycentric coordinates of the point
     // Returns true if the point is inside the triangle, false otherwise
-    bool getCoordinates(vec2D p, float& alpha, float& beta, float& gamma, float a = 1.f) {
+    bool getCoordinates(vec2D p, float& alpha, float& beta, float& gamma, float a = 1) {
         if (triangleOpti) {
             alpha = getC(vec2D(v[0].p), vec2D(v[1].p), p) * a; // Multiply by 1/area instead of dividing every time
             if (alpha < 0.f) return false; // Check after we get each component so we can stop early if necessary.
@@ -190,6 +190,7 @@ public:
 
             // Skip very small triangles
             if (area < 1.f) return;
+            float invArea = 1.f;
 
             // Iterate over the bounding box and check each pixel
             for (int y = (int)(minV.y); y < (int)ceil(maxV.y); y++) {

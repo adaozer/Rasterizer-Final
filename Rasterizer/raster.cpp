@@ -19,6 +19,7 @@
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <condition_variable>
 
 // Main rendering function that processes a mesh, transforms its vertices, applies lighting, and draws triangles on the canvas.
 // Input Variables:
@@ -26,22 +27,25 @@
 // - mesh: Pointer to the Mesh object containing vertices and triangles to render.
 // - camera: Matrix representing the camera's transformation.
 // - L: Light object representing the lighting parameters.
-struct BakedTri {
+
+struct BakedTri { // Includes all the data required for rasterisation. No need to deal with meshes/matrices etc.
     Vertex v[3];
-    float ka, kd;
+    float ka, kd; 
 };
 
 class RenderSystem {
 public:
     static RenderSystem& getInstance() {
-        static RenderSystem instance;
+        static RenderSystem instance; // Singleton
         return instance;
     }
 
+    
     Renderer* currentRenderer = nullptr;
     Light* currentLight = nullptr;
-    std::vector<BakedTri> drawList;
+    std::vector<BakedTri> drawList; // List of triangles in the scene
 
+    // For threading
     std::vector<std::thread> workers;
     std::mutex mtx;
     std::condition_variable cv_worker;
@@ -53,10 +57,12 @@ public:
     std::atomic<int> threadsFinished{ 0 };
     int numThreads;
 
+
     RenderSystem() {
         drawList.reserve(20000);
         numThreads = std::thread::hardware_concurrency();
-        if (numThreads == 0) numThreads = 4;
+        std::cout << numThreads << "\n";
+        if (numThreads == 0) numThreads = 11;
 
         threadFrame.resize(numThreads, 0);
 
@@ -378,7 +384,7 @@ void scene1() {
             }
         }
 
-        if (renderOpti) {
+        if (multiThread) {
             renderScene(renderer, scene, camera, L);
         }
         else {
@@ -453,7 +459,7 @@ void scene2() {
 
         if (renderer.canvas.keyPressed(VK_ESCAPE)) break;
 
-        if (renderOpti) {
+        if (multiThread) {
             renderScene(renderer, scene, camera, L); // For multithreading, we use a different render function that takes the scene as param rather than individual meshes.
         }
         else {

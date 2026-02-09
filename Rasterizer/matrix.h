@@ -187,7 +187,7 @@ public:
     // - x, y, z: Rotation angles in radians around each axis
     // Returns the composite rotation matrix
     static matrix makeRotateXYZ(float x, float y, float z) {
-        if (matrixOpti) {
+        if (matrixOpti) { // Brute force the matrix creation, no need for matrix multiplication operations.
             float cx = std::cos(x), sx = std::sin(x);
             float cy = std::cos(y), sy = std::sin(y);
             float cz = std::cos(z), sz = std::sin(z);

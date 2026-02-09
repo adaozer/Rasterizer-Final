@@ -41,9 +41,17 @@ public:
     // Divides the vector by its W component and sets W to 1.
     // Useful for normalizing the W component after transformations.
     void divideW() {
-        x /= w;
-        y /= w;
-        z /= w;
+        if (vec4Opti) {
+            float invW = 1.f / w;
+            x *= invW;
+            y *= invW;
+            z *= invW;
+        }
+        else {
+            x /= w;
+            y /= w;
+            z /= w;
+        }
         w = 1.f;
     }
 

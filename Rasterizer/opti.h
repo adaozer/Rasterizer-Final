@@ -1,7 +1,7 @@
 #pragma once
-inline constexpr bool matrixOpti = false;
+inline constexpr bool matrixOpti = true;
 inline constexpr bool colourOpti = true;
-inline constexpr bool renderOpti = false;
-inline constexpr bool triangleOpti = false;
-inline constexpr bool vec4Opti = false;
-inline constexpr bool meshOpti = false;
+inline constexpr bool multiThread = true;
+inline constexpr bool triangleOpti = true;
+inline constexpr bool vec4Opti = true;
+inline constexpr bool meshOpti = true;
