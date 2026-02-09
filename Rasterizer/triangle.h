@@ -112,17 +112,20 @@ public:
     // - ka, kd: Ambient and diffuse lighting coefficients
     void draw(Renderer& renderer, Light& L, float ka, float kd, int clipY_start = 0, int clipY_end = INT32_MAX) {
         if (triangleOpti) {
+            // Backface culling so not everything has to be rendered if unnecessary
             float signedArea = (v[1].p[0] - v[0].p[0]) * (v[2].p[1] - v[0].p[1]) - (v[1].p[1] - v[0].p[1]) * (v[2].p[0] - v[0].p[0]);
             if (signedArea <= 0.0f) return;
 
             int canvasW = renderer.canvas.getWidth();
             int canvasH = renderer.canvas.getHeight();
 
+            // Manually create a tight bounding box
             float minX = std::min({ v[0].p[0], v[1].p[0], v[2].p[0] });
             float maxX = std::max({ v[0].p[0], v[1].p[0], v[2].p[0] });
             float minY = std::min({ v[0].p[1], v[1].p[1], v[2].p[1] });
             float maxY = std::max({ v[0].p[1], v[1].p[1], v[2].p[1] });
 
+            // This is to slice the screen for each worker in multithreading
             int x0 = std::max(0, std::min(canvasW - 1, (int)std::floor(minX)));
             int x1 = std::max(0, std::min(canvasW - 1, (int)std::ceil(maxX)));
             int y0 = std::max(0, std::max(clipY_start, std::min(canvasH - 1, (int)std::floor(minY))));
@@ -130,6 +133,7 @@ public:
 
             if (x0 >= x1 || y0 >= y1) return;
 
+            // Compute lighting outside the loop. There is no per-pixel lighting, just per triangle. 
             vec4 omega = L.omega_i;
             omega.normalise();
             colour ambientTerm = L.ambient * ka;
@@ -139,6 +143,7 @@ public:
 
             vec2D pRow((float)x0 + 0.5f, (float)y0 + 0.5f);
 
+            // Manually computed edge functions that we will increment with each loop.
             float E0_row = getC(A, B, pRow);
             float E1_row = getC(B, C, pRow);
             float E2_row = getC(C, A, pRow);
@@ -147,6 +152,8 @@ public:
             float E0_dx = -e0.y, E0_dy = e0.x;
             float E1_dx = -e1.y, E1_dy = e1.x;
             float E2_dx = -e2.y, E2_dy = e2.x;
+
+            // inv area for barycentric coordinates
             float invArea = 1.f / area;
             for (int y = y0; y < y1; ++y) {
                 float E0 = E0_row, E1 = E1_row, E2 = E2_row;
@@ -155,7 +162,7 @@ public:
                     if (E0 >= 0.f && E1 >= 0.f && E2 >= 0.f) {
                         float alpha = E0 * invArea;
                         float beta = E1 * invArea;
-                        float gamma = E2 * invArea;
+                        float gamma = E2 * invArea; // Manually calculate barycentric coordinates
 
                         float depth = (v[0].p[2] * beta) + (v[1].p[2] * gamma) + (v[2].p[2] * alpha);
                         float& zBuff = renderer.zbuffer(x, y);
@@ -164,7 +171,7 @@ public:
                             zBuff = depth;
 
                             vec4 normal = interpolate(beta, gamma, alpha, v[0].normal, v[1].normal, v[2].normal);
-                            normal.normalise();
+                            normal.normalise(); // Interpolation, normalisation etc as usual.
 
                             float dot = std::max(vec4::dot(omega, normal), 0.0f);
                             colour c = interpolate(beta, gamma, alpha, v[0].rgb, v[1].rgb, v[2].rgb);

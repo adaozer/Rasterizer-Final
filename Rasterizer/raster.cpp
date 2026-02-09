@@ -40,7 +40,7 @@ public:
         return instance;
     }
 
-    
+    // This is the manager so threads aren't created again each frame.
     Renderer* currentRenderer = nullptr;
     Light* currentLight = nullptr;
     std::vector<BakedTri> drawList; // List of triangles in the scene
@@ -61,8 +61,7 @@ public:
     RenderSystem() {
         drawList.reserve(20000);
         numThreads = std::thread::hardware_concurrency();
-        std::cout << numThreads << "\n";
-        if (numThreads == 0) numThreads = 11;
+        if (numThreads == 0) numThreads = 4;
 
         threadFrame.resize(numThreads, 0);
 
@@ -76,6 +75,7 @@ public:
             std::unique_lock<std::mutex> lock(mtx);
             shutdown = true;
         }
+
         cv_worker.notify_all();
         for (auto& t : workers) t.join();
     }
@@ -90,15 +90,15 @@ public:
 
             if (shutdown) return;
 
-            threadFrame[id] = currentFrame;
+            threadFrame[id] = currentFrame; // if new frame,
             lock.unlock();
 
-            int height = currentRenderer->canvas.getHeight();
+            int height = currentRenderer->canvas.getHeight(); // Find your slice of the screen
             int sliceHeight = height / numThreads;
             int startY = id * sliceHeight;
             int endY = (id == numThreads - 1) ? height : (id + 1) * sliceHeight;
 
-            for (const auto& triData : drawList) {
+            for (const auto& triData : drawList) {  // Draw triangles within their slice of the screen
 
                 float minY = std::min({ triData.v[0].p[1], triData.v[1].p[1], triData.v[2].p[1] });
                 float maxY = std::max({ triData.v[0].p[1], triData.v[1].p[1], triData.v[2].p[1] });
@@ -117,7 +117,7 @@ public:
     }
 
     void processFrame(Renderer& renderer, Light& L) {
-        currentRenderer = &renderer;
+        currentRenderer = &renderer; // move to next frame if the current frame is done
         currentLight = &L;
         threadsFinished = 0;
 
@@ -135,6 +135,8 @@ public:
 };
 
 void renderScene(Renderer& renderer, std::vector<Mesh*>& scene, matrix& camera, Light& L) {
+    // preprocessing
+    // this prepares the scene for the thread workers
     RenderSystem& sys = RenderSystem::getInstance();
     sys.drawList.clear();
 
@@ -477,9 +479,9 @@ void scene2() {
 // No input variables
 int main() {
     // Uncomment the desired scene function to run
-    scene1();
+    //scene1();
     //scene2();
-    //sceneTest(); 
+    sceneTest(); 
     
 
     return 0;
